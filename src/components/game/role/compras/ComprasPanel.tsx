@@ -19,6 +19,12 @@ export function ComprasPanel({ gameCode, playerId }: ComprasPanelProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [minigameStrategy, setMinigameStrategy] = useState<
+    "NEGOCIAR_PRECIO" | "ENTREGA_URGENTE" | "PROVEEDOR_CONFIABLE"
+  >("PROVEEDOR_CONFIABLE");
+  const [procurementMode, setProcurementMode] = useState<
+    "SPOT" | "CONTRATO"
+  >("CONTRATO");
 
   function updateOrder(
     index: number,
@@ -52,7 +58,7 @@ export function ComprasPanel({ gameCode, playerId }: ComprasPanelProps) {
         body: JSON.stringify({
           playerId,
           type: "COMPRAS",
-          data: { orders }
+          data: { orders, minigameStrategy, procurementMode }
         })
       });
 
@@ -72,6 +78,42 @@ export function ComprasPanel({ gameCode, playerId }: ComprasPanelProps) {
   return (
     <form className="space-y-4" onSubmit={handleSubmit}>
       <Card title="Órdenes de compra de materia prima">
+        <div className="mb-3">
+          <label className="block text-xs font-medium mb-1">
+            Minijuego: estrategia de negociación
+          </label>
+          <select
+            value={minigameStrategy}
+            onChange={(e) =>
+              setMinigameStrategy(
+                e.target.value as
+                  | "NEGOCIAR_PRECIO"
+                  | "ENTREGA_URGENTE"
+                  | "PROVEEDOR_CONFIABLE"
+              )
+            }
+            className="w-full rounded-lg bg-slate-900 border border-slate-700 px-2 py-1 text-sm"
+          >
+            <option value="PROVEEDOR_CONFIABLE">Proveedor confiable (estable)</option>
+            <option value="NEGOCIAR_PRECIO">Negociar precio (menor costo, más riesgo)</option>
+            <option value="ENTREGA_URGENTE">Entrega urgente (más caro, más ágil)</option>
+          </select>
+        </div>
+        <div className="mb-3">
+          <label className="block text-xs font-medium mb-1">
+            Acción exclusiva: modo de abastecimiento
+          </label>
+          <select
+            value={procurementMode}
+            onChange={(e) =>
+              setProcurementMode(e.target.value as "SPOT" | "CONTRATO")
+            }
+            className="w-full rounded-lg bg-slate-900 border border-slate-700 px-2 py-1 text-sm"
+          >
+            <option value="CONTRATO">Contrato anual (estable)</option>
+            <option value="SPOT">Compra spot (más barato, más variable)</option>
+          </select>
+        </div>
         <Table
           headers={[
             "Cantidad",

@@ -77,14 +77,6 @@ export async function POST(
       }
     });
 
-    const newCount = game.players.length + 1;
-    if (newCount === 4 && game.status === "CONFIGURANDO") {
-      await prisma.game.update({
-        where: { id: game.id },
-        data: { status: "EN_CURSO" }
-      });
-    }
-
     return NextResponse.json(
       {
         playerId: player.id,

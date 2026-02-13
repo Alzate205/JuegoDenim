@@ -61,6 +61,8 @@ export interface DecisionCompras {
     leadTime: number; // semanas de entrega
     costPerUnit: number;
   }[];
+  minigameStrategy?: "NEGOCIAR_PRECIO" | "ENTREGA_URGENTE" | "PROVEEDOR_CONFIABLE";
+  procurementMode?: "SPOT" | "CONTRATO";
 }
 
 /**
@@ -70,6 +72,8 @@ export interface DecisionProduccion {
   type: "PRODUCCION";
   plannedProduction: number; // cantidad de jeans a producir
   extraHours: boolean; // uso de horas extra
+  minigameStrategy?: "BALANCE_LINEA" | "MAXIMO_RITMO" | "MANTENIMIENTO_PREVENTIVO";
+  shiftPlan?: "NORMAL" | "DOBLE_TURNO";
 }
 
 /**
@@ -78,6 +82,8 @@ export interface DecisionProduccion {
 export interface DecisionCalidad {
   type: "CALIDAD";
   inspectionLevel: "ALTO" | "MEDIO" | "BAJO";
+  minigameStrategy?: "MUESTREO_INTELIGENTE" | "CALIBRACION_TOTAL" | "AUDITORIA_EXPRESS";
+  reworkPolicy?: "NINGUNO" | "RETRABAJO_PARCIAL";
 }
 
 /**
@@ -91,6 +97,8 @@ export interface DecisionFinanzasLogistica {
     interestRate: number;
   }[];
   shippingPriorities: number[]; // IDs de pedidos en orden de prioridad
+  minigameStrategy?: "CONSOLIDAR_CARGA" | "ENVIO_EXPRESS" | "PRIORIZAR_MOROSOS";
+  cashAllocation?: "OPERACION" | "PAGO_DEUDA";
 }
 
 /**

@@ -24,18 +24,36 @@ const decisionComprasSchema = z.object({
         costPerUnit: z.number().min(0)
       })
     )
-    .default([])
+    .default([]),
+  minigameStrategy: z
+    .enum(["NEGOCIAR_PRECIO", "ENTREGA_URGENTE", "PROVEEDOR_CONFIABLE"])
+    .optional(),
+  procurementMode: z
+    .enum(["SPOT", "CONTRATO"])
+    .optional()
 });
 
 const decisionProduccionSchema = z.object({
   type: z.literal("PRODUCCION"),
   plannedProduction: z.number().int().min(0),
-  extraHours: z.boolean()
+  extraHours: z.boolean(),
+  minigameStrategy: z
+    .enum(["BALANCE_LINEA", "MAXIMO_RITMO", "MANTENIMIENTO_PREVENTIVO"])
+    .optional(),
+  shiftPlan: z
+    .enum(["NORMAL", "DOBLE_TURNO"])
+    .optional()
 });
 
 const decisionCalidadSchema = z.object({
   type: z.literal("CALIDAD"),
-  inspectionLevel: z.enum(["ALTO", "MEDIO", "BAJO"])
+  inspectionLevel: z.enum(["ALTO", "MEDIO", "BAJO"]),
+  minigameStrategy: z
+    .enum(["MUESTREO_INTELIGENTE", "CALIBRACION_TOTAL", "AUDITORIA_EXPRESS"])
+    .optional(),
+  reworkPolicy: z
+    .enum(["NINGUNO", "RETRABAJO_PARCIAL"])
+    .optional()
 });
 
 const decisionFinanzasLogisticaSchema = z.object({
@@ -49,7 +67,13 @@ const decisionFinanzasLogisticaSchema = z.object({
       })
     )
     .optional(),
-  shippingPriorities: z.array(z.number().int()).default([])
+  shippingPriorities: z.array(z.number().int()).default([]),
+  minigameStrategy: z
+    .enum(["CONSOLIDAR_CARGA", "ENVIO_EXPRESS", "PRIORIZAR_MOROSOS"])
+    .optional(),
+  cashAllocation: z
+    .enum(["OPERACION", "PAGO_DEUDA"])
+    .optional()
 });
 
 export const anyDecisionSchema = z.discriminatedUnion("type", [

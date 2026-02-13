@@ -15,6 +15,12 @@ type InspectionLevel = "ALTO" | "MEDIO" | "BAJO";
 export function CalidadPanel({ gameCode, playerId }: CalidadPanelProps) {
   const [inspectionLevel, setInspectionLevel] =
     useState<InspectionLevel>("MEDIO");
+  const [minigameStrategy, setMinigameStrategy] = useState<
+    "MUESTREO_INTELIGENTE" | "CALIBRACION_TOTAL" | "AUDITORIA_EXPRESS"
+  >("MUESTREO_INTELIGENTE");
+  const [reworkPolicy, setReworkPolicy] = useState<
+    "NINGUNO" | "RETRABAJO_PARCIAL"
+  >("RETRABAJO_PARCIAL");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -32,7 +38,7 @@ export function CalidadPanel({ gameCode, playerId }: CalidadPanelProps) {
         body: JSON.stringify({
           playerId,
           type: "CALIDAD",
-          data: { inspectionLevel }
+          data: { inspectionLevel, minigameStrategy, reworkPolicy }
         })
       });
 
@@ -79,6 +85,44 @@ export function CalidadPanel({ gameCode, playerId }: CalidadPanelProps) {
                 </label>
               )
             )}
+          </div>
+          <div className="mt-3">
+            <label className="block text-xs font-medium mb-1 text-slate-300">
+              Minijuego de control
+            </label>
+            <select
+              value={minigameStrategy}
+              onChange={(e) =>
+                setMinigameStrategy(
+                  e.target.value as
+                    | "MUESTREO_INTELIGENTE"
+                    | "CALIBRACION_TOTAL"
+                    | "AUDITORIA_EXPRESS"
+                )
+              }
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-sm"
+            >
+              <option value="MUESTREO_INTELIGENTE">Muestreo inteligente (balanceado)</option>
+              <option value="CALIBRACION_TOTAL">Calibración total (menos defectos, más costo)</option>
+              <option value="AUDITORIA_EXPRESS">Auditoría exprés (rápido, más riesgo)</option>
+            </select>
+          </div>
+          <div className="mt-3">
+            <label className="block text-xs font-medium mb-1 text-slate-300">
+              Acción exclusiva: política de retrabajo
+            </label>
+            <select
+              value={reworkPolicy}
+              onChange={(e) =>
+                setReworkPolicy(
+                  e.target.value as "NINGUNO" | "RETRABAJO_PARCIAL"
+                )
+              }
+              className="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1 text-sm"
+            >
+              <option value="RETRABAJO_PARCIAL">Retrabajo parcial de defectuosos</option>
+              <option value="NINGUNO">Sin retrabajo (más rápido)</option>
+            </select>
           </div>
         </div>
       </Card>

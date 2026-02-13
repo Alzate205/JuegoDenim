@@ -58,18 +58,32 @@ export function JoinGameForm() {
         localStorage.setItem(
           "denim-factory-player",
           JSON.stringify({
+            code: data.code,
             gameCode: data.code,
             playerId: data.playerId,
             role: data.role,
             name
           })
         );
+
+        localStorage.setItem(
+          `denim-factory-player-${data.code}-${data.playerId}`,
+          JSON.stringify({
+            code: data.code,
+            gameCode: data.code,
+            playerId: data.playerId,
+            role: data.role,
+            name
+          })
+        );
+
+        localStorage.setItem(
+          `denim-factory-active-player-${data.code}`,
+          String(data.playerId)
+        );
       }
 
-      // ⚠️ Aquí está el cambio importante:
-      // Antes: router.push(`/game/${data.code}/lobby`);
-      // Ahora: mandamos directo al TABLERO visual.
-      router.push(`/game/${data.code}/board`);
+      router.push(`/game/${data.code}/role?playerId=${data.playerId}`);
     } catch (err: any) {
       setError(err.message ?? "Error inesperado.");
     } finally {

@@ -32,8 +32,17 @@ export function CreateGameForm() {
         throw new Error(data?.error ?? "No se pudo crear la partida.");
       }
 
-      // Redirigir directo al tablero
-      router.push(`/game/${data.code}/board`);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(
+          "denim-factory-host",
+          JSON.stringify({
+            code: data.code,
+            isHost: true
+          })
+        );
+      }
+
+      router.push(`/game/${data.code}/lobby`);
     } catch (err: any) {
       setError(err.message ?? "Error inesperado.");
     } finally {

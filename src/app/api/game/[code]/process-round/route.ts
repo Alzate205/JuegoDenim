@@ -81,7 +81,7 @@ export async function POST(
 
     const financialStatePrev = await prisma.financialState.findUnique({
       where: {
-        gameId_week: {
+        gameId_week_financial: {
           gameId: game.id,
           week: prevWeek
         }
@@ -153,6 +153,8 @@ export async function POST(
     if (!decisionsByRole.compras) {
       decisionsByRole.compras = {
         type: "COMPRAS",
+        minigameStrategy: "PROVEEDOR_CONFIABLE",
+        procurementMode: "CONTRATO",
         orders: [
           {
             quantity: 80,       // el bot pide materia prima moderada
@@ -167,14 +169,18 @@ export async function POST(
       decisionsByRole.produccion = {
         type: "PRODUCCION",
         plannedProduction: 80, // producción estándar
-        extraHours: false      // sin horas extra
+        extraHours: false,     // sin horas extra
+        minigameStrategy: "BALANCE_LINEA",
+        shiftPlan: "NORMAL"
       };
     }
 
     if (!decisionsByRole.calidad) {
       decisionsByRole.calidad = {
         type: "CALIDAD",
-        inspectionLevel: "MEDIO" // equilibrio entre costo y defectos
+        inspectionLevel: "MEDIO", // equilibrio entre costo y defectos
+        minigameStrategy: "MUESTREO_INTELIGENTE",
+        reworkPolicy: "RETRABAJO_PARCIAL"
       };
     }
 
@@ -182,7 +188,9 @@ export async function POST(
       decisionsByRole.finanzasLogistica = {
         type: "FINANZAS_LOGISTICA",
         loans: [],              // sin préstamos por defecto
-        shippingPriorities: []  // prioridad por fecha (lo maneja el engine)
+        shippingPriorities: [], // prioridad por fecha (lo maneja el engine)
+        minigameStrategy: "CONSOLIDAR_CARGA",
+        cashAllocation: "OPERACION"
       };
     }
 

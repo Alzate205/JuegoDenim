@@ -52,11 +52,21 @@ export function processRound(context: GameContext): RoundResult {
   rawMaterial -= rawUsed;
 
   const grossProduction = rawUsed;
-  const defectRate = calculateDefectRate(decisionCal, eventsActive);
+  const defectRate = calculateDefectRate(
+    decisionCal,
+    decisionProd,
+    decisions.compras,
+    eventsActive
+  );
   const goodUnits = Math.round(grossProduction * (1 - defectRate));
   const defectiveUnits = grossProduction - goodUnits;
 
-  finishedGoods += goodUnits;
+  let recoveredUnits = 0;
+  if (decisionCal?.reworkPolicy === "RETRABAJO_PARCIAL") {
+    recoveredUnits = Math.round(defectiveUnits * 0.5);
+  }
+
+  finishedGoods += goodUnits + recoveredUnits;
 
   // 3. Satisfacción de pedidos
   const decisionFinLog = decisions.finanzasLogistica;
@@ -92,13 +102,21 @@ export function processRound(context: GameContext): RoundResult {
   const decisionCompras = decisions.compras;
   const rawMaterialCost = calculateRawMaterialCost(rawUsed, decisionCompras);
   const laborCost = calculateLaborCost(decisionProd, eventsActive);
-  const qualityCost = calculateQualityCost(decisionCal, grossProduction);
+  const qualityCost = calculateQualityCost(
+    decisionCal,
+    grossProduction,
+    recoveredUnits
+  );
   const logisticsCost = calculateLogisticsCost(
     customerOrdersDue,
     decisionFinLog
   );
   const interestCost = calculateInterestCost(financialStatePrev, decisionFinLog);
-  const penaltiesCost = calculatePenalties(updatedOrders, context.week);
+  const penaltiesCost = calculatePenalties(
+    updatedOrders,
+    context.week,
+    decisionFinLog
+  );
 
   const totalCosts =
     rawMaterialCost +
@@ -172,6 +190,22 @@ function calculateRealCapacity(
     capacity = Math.round(capacity * 1.2);
   }
 
+  if (decision.minigameStrategy === "BALANCE_LINEA") {
+    capacity = Math.round(capacity * 1.1);
+  }
+
+  if (decision.minigameStrategy === "MAXIMO_RITMO") {
+    capacity = Math.round(capacity * 1.2);
+  }
+
+  if (decision.minigameStrategy === "MANTENIMIENTO_PREVENTIVO") {
+    capacity = Math.round(capacity * 0.9);
+  }
+
+  if (decision.shiftPlan === "DOBLE_TURNO") {
+    capacity = Math.round(capacity * 1.15);
+  }
+
   return Math.max(0, capacity);
 }
 
@@ -180,6 +214,8 @@ function calculateRealCapacity(
  */
 function calculateDefectRate(
   decision: DecisionCalidad | undefined,
+  decisionProd: DecisionProduccion | undefined,
+  decisionCompras: DecisionCompras | undefined,
   events: GameEventDTO[]
 ): number {
   if (!decision) return BASE_DEFECT_RATE.MEDIO;
@@ -192,6 +228,34 @@ function calculateDefectRate(
     if (ev.type === "operativo" && ev.effects?.defectRateIncrease) {
       base += ev.effects.defectRateIncrease;
     }
+  }
+
+  if (decision?.minigameStrategy === "MUESTREO_INTELIGENTE") {
+    base -= 0.01;
+  }
+
+  if (decision?.minigameStrategy === "CALIBRACION_TOTAL") {
+    base -= 0.02;
+  }
+
+  if (decision?.minigameStrategy === "AUDITORIA_EXPRESS") {
+    base += 0.01;
+  }
+
+  if (decisionProd?.minigameStrategy === "MAXIMO_RITMO") {
+    base += 0.02;
+  }
+
+  if (decisionProd?.minigameStrategy === "MANTENIMIENTO_PREVENTIVO") {
+    base -= 0.01;
+  }
+
+  if (decisionCompras?.procurementMode === "SPOT") {
+    base += 0.01;
+  }
+
+  if (decisionCompras?.procurementMode === "CONTRATO") {
+    base -= 0.005;
   }
 
   return Math.min(Math.max(base, 0), 0.5);
@@ -239,7 +303,25 @@ function calculateRawMaterialCost(
 ): number {
   // Versión simple: costo fijo
   const unitCost = decisionCompras?.orders?.[0]?.costPerUnit ?? BASE_RAW_MATERIAL_COST_PER_UNIT;
-  return rawUsed * unitCost;
+  let strategyMultiplier = 1;
+
+  if (decisionCompras?.minigameStrategy === "NEGOCIAR_PRECIO") {
+    strategyMultiplier = 0.92;
+  }
+
+  if (decisionCompras?.minigameStrategy === "ENTREGA_URGENTE") {
+    strategyMultiplier = 1.08;
+  }
+
+  if (decisionCompras?.procurementMode === "SPOT") {
+    strategyMultiplier *= 0.94;
+  }
+
+  if (decisionCompras?.procurementMode === "CONTRATO") {
+    strategyMultiplier *= 1.04;
+  }
+
+  return rawUsed * unitCost * strategyMultiplier;
 }
 
 function calculateLaborCost(
@@ -253,6 +335,18 @@ function calculateLaborCost(
     unitCost *= EXTRA_HOURS_FACTOR;
   }
 
+  if (decision.minigameStrategy === "MAXIMO_RITMO") {
+    unitCost *= 1.15;
+  }
+
+  if (decision.minigameStrategy === "MANTENIMIENTO_PREVENTIVO") {
+    unitCost *= 0.95;
+  }
+
+  if (decision.shiftPlan === "DOBLE_TURNO") {
+    unitCost *= 1.2;
+  }
+
   // Se podrían aplicar eventos que aumenten costo de mano de obra
 
   return decision.plannedProduction * unitCost;
@@ -260,11 +354,30 @@ function calculateLaborCost(
 
 function calculateQualityCost(
   decision: DecisionCalidad | undefined,
-  grossProduction: number
+  grossProduction: number,
+  recoveredUnits: number
 ): number {
   if (!decision) return grossProduction * BASE_QUALITY_COST_PER_UNIT.MEDIO;
-  const costPerUnit = BASE_QUALITY_COST_PER_UNIT[decision.inspectionLevel];
-  return grossProduction * costPerUnit;
+  let costPerUnit = BASE_QUALITY_COST_PER_UNIT[decision.inspectionLevel];
+
+  if (decision.minigameStrategy === "MUESTREO_INTELIGENTE") {
+    costPerUnit *= 0.95;
+  }
+
+  if (decision.minigameStrategy === "CALIBRACION_TOTAL") {
+    costPerUnit *= 1.1;
+  }
+
+  if (decision.minigameStrategy === "AUDITORIA_EXPRESS") {
+    costPerUnit *= 0.9;
+  }
+
+  const reworkCost =
+    decision.reworkPolicy === "RETRABAJO_PARCIAL"
+      ? recoveredUnits * 0.4
+      : 0;
+
+  return grossProduction * costPerUnit + reworkCost;
 }
 
 function calculateLogisticsCost(
@@ -275,7 +388,21 @@ function calculateLogisticsCost(
   const deliveredOrders = ordersDue.filter(
     (o) => o.deliveredQuantity > 0
   );
-  return deliveredOrders.length * BASE_LOGISTICS_COST_PER_ORDER;
+  let multiplier = 1;
+
+  if (decision?.minigameStrategy === "CONSOLIDAR_CARGA") {
+    multiplier = 0.85;
+  }
+
+  if (decision?.minigameStrategy === "ENVIO_EXPRESS") {
+    multiplier = 1.2;
+  }
+
+  if (decision?.cashAllocation === "PAGO_DEUDA") {
+    multiplier *= 1.05;
+  }
+
+  return deliveredOrders.length * BASE_LOGISTICS_COST_PER_ORDER * multiplier;
 }
 
 function calculateInterestCost(
@@ -285,7 +412,11 @@ function calculateInterestCost(
   decisionFinLog: DecisionFinanzasLogistica | undefined
 ): number {
   // Intereses sobre deuda previa. Se podría extender a estructura de préstamos.
-  const baseInterest = financialPrev.totalDebt * BASE_INTEREST_RATE_PER_WEEK;
+  let baseInterest = financialPrev.totalDebt * BASE_INTEREST_RATE_PER_WEEK;
+
+  if (decisionFinLog?.cashAllocation === "PAGO_DEUDA") {
+    baseInterest *= 0.8;
+  }
   // No consideramos nuevos préstamos en esta semana para intereses inmediatos.
   return baseInterest;
 }
@@ -295,7 +426,8 @@ function calculateInterestCost(
  */
 function calculatePenalties(
   updatedOrders: any[],
-  currentWeek: number
+  currentWeek: number,
+  decisionFinLog: DecisionFinanzasLogistica | undefined
 ): number {
   let penalties = 0;
 
@@ -308,6 +440,18 @@ function calculatePenalties(
       const unitsLate = order.quantity - order.deliveredQuantity;
       penalties += unitsLate * PENALTY_PER_LATE_UNIT;
     }
+  }
+
+  if (decisionFinLog?.minigameStrategy === "ENVIO_EXPRESS") {
+    penalties *= 0.85;
+  }
+
+  if (decisionFinLog?.minigameStrategy === "PRIORIZAR_MOROSOS") {
+    penalties *= 0.7;
+  }
+
+  if (decisionFinLog?.cashAllocation === "OPERACION") {
+    penalties *= 0.9;
   }
 
   return penalties;

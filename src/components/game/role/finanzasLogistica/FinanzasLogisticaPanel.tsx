@@ -18,6 +18,12 @@ export function FinanzasLogisticaPanel({
   const [loanTerm, setLoanTerm] = useState(4);
   const [loanRate, setLoanRate] = useState(0.05);
   const [shippingPriorities, setShippingPriorities] = useState("");
+  const [minigameStrategy, setMinigameStrategy] = useState<
+    "CONSOLIDAR_CARGA" | "ENVIO_EXPRESS" | "PRIORIZAR_MOROSOS"
+  >("CONSOLIDAR_CARGA");
+  const [cashAllocation, setCashAllocation] = useState<
+    "OPERACION" | "PAGO_DEUDA"
+  >("OPERACION");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -45,7 +51,12 @@ export function FinanzasLogisticaPanel({
         body: JSON.stringify({
           playerId,
           type: "FINANZAS_LOGISTICA",
-          data: { loans, shippingPriorities: priorities }
+          data: {
+            loans,
+            shippingPriorities: priorities,
+            minigameStrategy,
+            cashAllocation
+          }
         })
       });
 
@@ -125,6 +136,46 @@ export function FinanzasLogisticaPanel({
           className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm"
           placeholder="Ej: 12, 5, 8"
         />
+
+        <div className="mt-3">
+          <label className="text-slate-300 text-xs block mb-1">
+            Minijuego logístico
+          </label>
+          <select
+            value={minigameStrategy}
+            onChange={(e) =>
+              setMinigameStrategy(
+                e.target.value as
+                  | "CONSOLIDAR_CARGA"
+                  | "ENVIO_EXPRESS"
+                  | "PRIORIZAR_MOROSOS"
+              )
+            }
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm"
+          >
+            <option value="CONSOLIDAR_CARGA">Consolidar carga (ahorro en flete)</option>
+            <option value="ENVIO_EXPRESS">Envío exprés (menos atrasos, más costo)</option>
+            <option value="PRIORIZAR_MOROSOS">Priorizar pedidos atrasados</option>
+          </select>
+        </div>
+
+        <div className="mt-3">
+          <label className="text-slate-300 text-xs block mb-1">
+            Acción exclusiva: asignación de caja
+          </label>
+          <select
+            value={cashAllocation}
+            onChange={(e) =>
+              setCashAllocation(
+                e.target.value as "OPERACION" | "PAGO_DEUDA"
+              )
+            }
+            className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm"
+          >
+            <option value="OPERACION">Priorizar operación y servicio</option>
+            <option value="PAGO_DEUDA">Priorizar pago de deuda</option>
+          </select>
+        </div>
       </Card>
 
       {error && <ErrorMessage message={error} />}

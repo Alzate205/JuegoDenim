@@ -1,15 +1,26 @@
+import { Button } from "components/common/Button";
+
 interface LobbyStatusProps {
   status: string;
   playersCount: number;
   totalPlayersRequired: number;
+  isHost: boolean;
+  onStart: () => void;
+  starting: boolean;
+  startError: string | null;
 }
 
 export function LobbyStatus({
   status,
   playersCount,
-  totalPlayersRequired
+  totalPlayersRequired,
+  isHost,
+  onStart,
+  starting,
+  startError
 }: LobbyStatusProps) {
-  const ready = playersCount >= totalPlayersRequired && status === "EN_CURSO";
+  const rolesReady = playersCount >= totalPlayersRequired;
+  const canHostStart = isHost && status === "CONFIGURANDO" && rolesReady;
 
   return (
     <div className="bg-slate-900/70 border border-slate-800 rounded-2xl px-4 py-3 flex items-center justify-between">
@@ -26,11 +37,25 @@ export function LobbyStatus({
         <p className="text-sm font-semibold text-slate-100">
           {playersCount} / {totalPlayersRequired}
         </p>
-        {ready && (
-          <p className="text-xs text-emerald-400 mt-1">
-            Todos los roles asignados. El profesor puede iniciar la
-            simulación.
+        {rolesReady && status === "CONFIGURANDO" && (
+          <p className="text-xs text-amber-400 mt-1">
+            Roles listos. Esperando que el creador inicie la partida.
           </p>
+        )}
+        {status === "EN_CURSO" && (
+          <p className="text-xs text-emerald-400 mt-1">
+            Partida iniciada. Ya pueden jugar la semana actual.
+          </p>
+        )}
+        {canHostStart && (
+          <div className="mt-2 flex justify-end">
+            <Button onClick={onStart} disabled={starting}>
+              {starting ? "Iniciando..." : "Iniciar partida"}
+            </Button>
+          </div>
+        )}
+        {startError && (
+          <p className="text-xs text-red-300 mt-1">{startError}</p>
         )}
       </div>
     </div>

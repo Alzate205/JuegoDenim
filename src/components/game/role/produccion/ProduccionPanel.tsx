@@ -16,6 +16,12 @@ export function ProduccionPanel({
 }: ProduccionPanelProps) {
   const [plannedProduction, setPlannedProduction] = useState(100);
   const [extraHours, setExtraHours] = useState(false);
+  const [minigameStrategy, setMinigameStrategy] = useState<
+    "BALANCE_LINEA" | "MAXIMO_RITMO" | "MANTENIMIENTO_PREVENTIVO"
+  >("BALANCE_LINEA");
+  const [shiftPlan, setShiftPlan] = useState<"NORMAL" | "DOBLE_TURNO">(
+    "NORMAL"
+  );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -33,7 +39,12 @@ export function ProduccionPanel({
         body: JSON.stringify({
           playerId,
           type: "PRODUCCION",
-          data: { plannedProduction, extraHours }
+          data: {
+            plannedProduction,
+            extraHours,
+            minigameStrategy,
+            shiftPlan
+          }
         })
       });
 
@@ -78,6 +89,36 @@ export function ProduccionPanel({
               onChange={(e) => setExtraHours(e.target.checked)}
               className="h-4 w-4"
             />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <label className="text-slate-200">Minijuego operativo</label>
+            <select
+              value={minigameStrategy}
+              onChange={(e) =>
+                setMinigameStrategy(
+                  e.target.value as
+                    | "BALANCE_LINEA"
+                    | "MAXIMO_RITMO"
+                    | "MANTENIMIENTO_PREVENTIVO"
+                )
+              }
+              className="w-56 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1"
+            >
+              <option value="BALANCE_LINEA">Balance de línea (estable)</option>
+              <option value="MAXIMO_RITMO">Máximo ritmo (más output, más presión)</option>
+              <option value="MANTENIMIENTO_PREVENTIVO">Mantenimiento preventivo</option>
+            </select>
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <label className="text-slate-200">Acción exclusiva: plan de turnos</label>
+            <select
+              value={shiftPlan}
+              onChange={(e) => setShiftPlan(e.target.value as "NORMAL" | "DOBLE_TURNO")}
+              className="w-56 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1"
+            >
+              <option value="NORMAL">Turno normal</option>
+              <option value="DOBLE_TURNO">Doble turno</option>
+            </select>
           </div>
         </div>
       </Card>

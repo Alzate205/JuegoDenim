@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 interface GameSidebarProps {
@@ -15,11 +16,29 @@ const links = [
 
 export function GameSidebar({ code }: GameSidebarProps) {
   const pathname = usePathname();
+  const [activePlayerId, setActivePlayerId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const raw = window.localStorage.getItem(
+      `denim-factory-active-player-${code}`
+    );
+    if (!raw) {
+      setActivePlayerId(null);
+      return;
+    }
+
+    const parsed = Number(raw);
+    setActivePlayerId(Number.isInteger(parsed) && parsed > 0 ? parsed : null);
+  }, [code]);
 
   return (
     <nav className="space-y-2">
       {links.map((link) => {
-        const url = link.href(code);
+        const baseUrl = link.href(code);
+        const url =
+          link.label === "Panel de rol" && activePlayerId
+            ? `${baseUrl}?playerId=${activePlayerId}`
+            : baseUrl;
         const active = pathname.startsWith(url);
         return (
           <Link
