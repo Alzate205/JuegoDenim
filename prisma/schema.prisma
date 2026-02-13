@@ -1,0 +1,124 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// IMPORTANTE: ya no usamos enums en Prisma, se guardan como String.
+// Los valores permitidos los controlamos desde la aplicación.
+
+model Game {
+  id             Int      @id @default(autoincrement())
+  code           String   @unique
+  createdAt      DateTime @default(now())
+  currentWeek    Int      @default(1)
+  totalWeeks     Int
+  status         String   @default("CONFIGURANDO") // CONFIGURANDO | EN_CURSO | FINALIZADA
+
+  players         Player[]
+  inventoryStates InventoryState[]
+  customerOrders  CustomerOrder[]
+  purchaseOrders  PurchaseOrder[]
+  financialStates FinancialState[]
+  events          GameEvent[]
+  decisions       Decision[]
+}
+
+model Player {
+  id     Int    @id @default(autoincrement())
+  name   String
+  role   String // COMPRAS | PRODUCCION | CALIDAD | FINANZAS_LOGISTICA
+  gameId Int
+  game   Game   @relation(fields: [gameId], references: [id])
+
+  decisions Decision[]     // lado opuesto de la relación con Decision
+
+  @@index([gameId])
+}
+
+model InventoryState {
+  id                     Int    @id @default(autoincrement())
+  gameId                 Int
+  week                   Int
+  rawMaterialInventory   Int
+  finishedGoodsInventory Int
+  game                   Game   @relation(fields: [gameId], references: [id])
+
+  @@unique([gameId, week], name: "gameId_week")
+}
+
+model CustomerOrder {
+  id                Int    @id @default(autoincrement())
+  gameId            Int
+  createdWeek       Int
+  dueWeek           Int
+  quantity          Int
+  unitPrice         Float
+  deliveredQuantity Int    @default(0)
+  status            String  // pendiente, parcial, cumplido, atrasado
+
+  game Game @relation(fields: [gameId], references: [id])
+
+  @@index([gameId])
+}
+
+model PurchaseOrder {
+  id            Int    @id @default(autoincrement())
+  gameId        Int
+  requestedWeek Int
+  estimatedWeek Int
+  quantity      Int
+  totalCost     Float
+  status        String  // pendiente, recibido, retrasado
+
+  game Game @relation(fields: [gameId], references: [id])
+
+  @@index([gameId])
+}
+
+model FinancialState {
+  id                Int    @id @default(autoincrement())
+  gameId            Int
+  week              Int
+  cash              Float
+  totalDebt         Float
+  interestsPaid     Float
+  weeklyProfit      Float
+  accumulatedProfit Float
+
+  game Game @relation(fields: [gameId], references: [id])
+
+  @@unique([gameId, week], name: "gameId_week_financial")
+}
+
+model GameEvent {
+  id          Int    @id @default(autoincrement())
+  gameId      Int
+  startWeek   Int
+  endWeek     Int
+  type        String // operativo, demanda, financiero, logistico
+  description String
+  effectsJson String
+
+  game Game @relation(fields: [gameId], references: [id])
+
+  @@index([gameId])
+}
+
+model Decision {
+  id        Int      @id @default(autoincrement())
+  gameId    Int
+  playerId  Int
+  week      Int
+  type      String   // compras, produccion, calidad, finanzas_logistica
+  dataJson  String
+  createdAt DateTime @default(now())
+
+  game   Game   @relation(fields: [gameId], references: [id])
+  player Player @relation(fields: [playerId], references: [id])
+
+  @@index([gameId, week])
+}
